@@ -1,0 +1,238 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <fstream>
+using namespace std;
+
+ifstream fin("a.txt");
+
+//clase
+
+class Locuinta {
+	string nume_client;
+	int s_utila;
+	float discount;
+
+public:
+	Locuinta(string, int, float);
+	Locuinta(const Locuinta&);
+	Locuinta() = default;
+	virtual ~Locuinta();
+
+	virtual float calculChirie(int, int) = 0;
+
+	void set_nume_client(string);
+	void set_s_utila(int);
+	void set_discount(float);
+
+	string get_nume_client() const;
+	int get_s_utila() const;
+	float get_discount() const;
+};
+
+class Apartament : public Locuinta {
+	int etaj;
+public:
+	Apartament(string, int, float, int);
+	Apartament(const Apartament&);
+	Apartament() = default;
+	~Apartament();
+
+	Apartament& operator = (const Apartament& c) {
+		this->set_nume_client(c.get_nume_client());
+		this->set_s_utila(c.get_s_utila());
+		this->set_discount(c.get_discount());
+		etaj = c.etaj;
+	}
+
+
+	float calculChirie(int, int);
+
+	friend ostream& operator << (ostream& out, const Apartament&);
+	friend istream& operator >> (istream& in, Apartament&);
+
+};
+
+class Casa : public Locuinta {
+	int s_curte;
+public:
+	Casa(string, int, float, int);
+	Casa(const Casa&);
+	Casa() = default;
+	~Casa();
+
+	Casa& operator = (const Casa& c) {
+		this->set_nume_client(c.get_nume_client());
+		this->set_s_utila(c.get_s_utila());
+		this->set_discount(c.get_discount());
+		s_curte = c.s_curte;	
+	}
+
+	float calculChirie(int, int);
+
+	friend ostream& operator << (ostream& out, const Casa&);
+	friend istream& operator >> (istream& in, Casa&);
+};
+
+class AgentieImobiliara {
+	vector<Locuinta*> V;
+public:
+	AgentieImobiliara() = default;
+	~AgentieImobiliara();
+
+	void citire(int, int);
+	void afisare(int);
+};
+
+
+////metode constructori
+Locuinta::Locuinta(string nume, int s, float d) {
+	nume_client = nume;
+	s_utila = s;
+	discount = d;
+}
+Locuinta::Locuinta(const Locuinta& old_str)
+{
+	nume_client = old_str.nume_client;
+	s_utila = old_str.s_utila;
+	discount = old_str.discount;
+}
+Locuinta::~Locuinta() {}
+
+Apartament::Apartament(string nume, int sUtila, float d, int e) : Locuinta(nume, sUtila, d) {
+	etaj = e;
+}
+Apartament::Apartament(const Apartament& old_str)
+{
+	etaj = old_str.etaj;
+}
+Apartament::~Apartament() {}
+
+Casa::Casa(string nume, int sUtila, float d, int sCurte) : Locuinta(nume, sUtila, d) {
+	s_curte = sCurte;
+}
+Casa::Casa(const Casa& old_str)
+{
+	s_curte = old_str.s_curte;
+}
+Casa::~Casa() {}
+
+AgentieImobiliara::~AgentieImobiliara() {}
+
+
+////metode getter
+string Locuinta::get_nume_client() const {
+	return this->nume_client;
+}
+int Locuinta::get_s_utila() const {
+	return this->s_utila;
+}
+float Locuinta::get_discount() const {
+	return this->discount;
+}
+
+
+////metode setter
+void Locuinta::set_nume_client(string x) {
+	if (x.empty())
+		fin >> this->nume_client;
+	else this->nume_client = x;
+}
+void Locuinta::set_s_utila(int x) {
+	if (!x)
+		fin >> this->s_utila;
+	else this->s_utila = x;
+}
+void Locuinta::set_discount(float x) {
+	if (!x)
+		fin >> this->discount;
+	else this->discount = x;
+}
+
+//metode calcul_chirie
+float Casa::calculChirie(int x, int y) {
+	if (y)
+		return x * (this->get_s_utila() + 0.2 * s_curte) * (1 - float(y) * this->get_discount() / 100.0);
+	return x * (this->get_s_utila() + 0.2 * s_curte);
+}
+float Apartament::calculChirie(int x, int y) {
+	if (y)
+		return x * this->get_s_utila() * (1 - float(y) * this->get_discount() / 100.0);
+	return x * this->get_s_utila() * (1 - this->get_discount() / 100.0);
+}
+
+
+//metode AgentieImobiliara
+void AgentieImobiliara::citire(int pozitie, int type) {
+
+	if (type) {
+		Apartament* apartament = new Apartament;
+		fin >> *apartament;
+		V.push_back(apartament);
+		return;
+	}
+
+	Casa* casa = new Casa;
+	fin >> *casa;
+	V.push_back(casa);
+}
+void AgentieImobiliara::afisare(int pozitie) {
+	if (Casa* d = dynamic_cast<Casa*>(V[pozitie])) {
+		cout << *d << endl;
+		return;
+	}
+
+	if (Apartament* d = dynamic_cast<Apartament*>(V[pozitie])) {
+		cout << *d << endl;
+		return;
+	}
+}
+
+
+////metode citire si afisare
+ostream& operator << (ostream& out, const Apartament& c) {
+	out << c.get_nume_client() << " ";
+	out << c.get_s_utila() << " ";
+	out << c.get_discount() << " ";
+	out << c.etaj << endl;
+	return out;
+}
+istream& operator >> (istream& in, Apartament& c) {
+	c.set_nume_client("");
+	c.set_s_utila(0);
+	c.set_discount(0);
+	in >> c.etaj;
+	return in;
+}
+
+ostream& operator << (ostream& out, const Casa& c) {
+	out << c.get_nume_client() << " ";
+	out << c.get_s_utila() << " ";
+	out << c.get_discount() << " ";
+	out << c.s_curte << endl;
+	return out;
+}
+istream& operator >> (istream& in, Casa& c) {
+	string aux = "";
+	c.set_nume_client(aux);
+	c.set_s_utila(0);
+	c.set_discount(0);
+	in >> c.s_curte;
+	return in;
+}
+
+
+int main() {
+	AgentieImobiliara a;
+	int n, type;
+	fin >> n;
+	int poz = 0;
+	while (poz++ < n) {
+		fin >> type;
+		a.citire(poz - 1, type);
+	}
+
+	poz = 0;
+	while (poz++ < n)
+		a.afisare(poz - 1);
+}
